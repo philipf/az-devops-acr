@@ -1,0 +1,35 @@
+trigger: none
+
+pool:
+#  name: PfLocal
+  vmImage: ubuntu-latest
+
+variables:
+  azureSubscription: ADO.philipfourie
+  acrName: pfrbac
+  dockerImageName: $(acrName).azurecr.io/my-docker-image 
+  dockerImageTags: 1.0.0
+
+steps:
+- script: |
+    echo $(acrName)
+    echo $(dockerImageName)
+  displayName: 'Print context'
+
+- task: Docker@2
+  displayName: Build the docker image
+  inputs:
+    repository: $(dockerImageName)
+    tags: $(dockerImageTags)
+    command: build
+    Dockerfile: Dockerfile
+
+- task: AzureCLI@2
+  displayName: 'Push image'
+  inputs:
+    azureSubscription: $(azureSubscription)
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      az acr login --name $(acrName)
+      docker push $(dockerImageName):$(dockerImageTags)
